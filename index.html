@@ -19,10 +19,12 @@
     .no{background:#ffe6e6}
     small{color:#666}
     .muted{color:#777;font-size:12px}
+    code{background:#f6f8fa;padding:2px 4px;border-radius:4px}
   </style>
 </head>
 <body>
   <h1>Panel de Baloncesto (Gratis)</h1>
+
   <div class="row">
     <button id="btn" onclick="actualizar()">Actualizar ahora</button>
     <span class="muted">Usa tus claves abajo si no cargaron aún.</span>
@@ -56,6 +58,13 @@
     Nota: las cuotas pueden mostrarse con 🔒 cuando la fuente gratuita no las tiene. La señal usa tu método de alta seguridad.
   </p>
 
+  <!-- Visor de datos brutos para diagnóstico -->
+  <details style="margin-top:16px">
+    <summary>Ver datos brutos (para diagnóstico)</summary>
+    <pre id="raw" style="white-space:pre-wrap;background:#f6f8fa;padding:12px;border-radius:8px;max-height:300px;overflow:auto"></pre>
+  </details>
+
   <script src="./script.js"></script>
 </body>
 </html>
+
