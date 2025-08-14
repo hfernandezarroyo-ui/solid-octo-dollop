@@ -3,72 +3,60 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Panel Basket – Señales y Estrategia</title>
+  <title>Panel Basket — Modo sin cuotas ni reloj</title>
   <style>
-    body{font-family:system-ui,Arial,sans-serif;margin:16px}
-    h1{margin:0 0 8px}
-    .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-    input[type="password"],input[type="text"],input[type="number"]{padding:8px;border:1px solid #ddd;border-radius:8px;min-width:220px}
-    button{padding:8px 14px;border:0;border-radius:8px;background:#111;color:#fff;cursor:pointer}
-    button:disabled{opacity:.5;cursor:not-allowed}
-    table{width:100%;border-collapse:collapse;margin-top:12px}
-    th,td{border-bottom:1px solid #eee;padding:8px;text-align:left;vertical-align:top}
-    .chip{display:inline-block;padding:6px 8px;border-radius:8px}
-    .ok{background:#e6ffed}
-    .wait{background:#fff7e6}
-    .no{background:#ffe6e6}
-    small{color:#666}
-    .muted{color:#777;font-size:12px}
-    code{background:#f6f8fa;padding:2px 4px;border-radius:4px}
-    .right{text-align:right}
+    :root{--bg:#0f1216;--card:#161a20;--muted:#95a2b3;--ok:#15c27b;--warn:#f0c419;--no:#f35b5b}
+    *{box-sizing:border-box}
+    body{margin:0; font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif; background:var(--bg); color:#e8eef7}
+    header{padding:16px 20px; border-bottom:1px solid #222a35}
+    h1{margin:0; font-size:20px}
+    .wrap{max-width:980px; margin:0 auto; padding:16px}
+    .row{display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:12px}
+    .card{background:var(--card); border:1px solid #222a35; border-radius:14px; padding:14px}
+    input[type="text"]{
+      background:#0b0e12; border:1px solid #2a3442; color:#e8eef7;
+      padding:10px 12px; border-radius:10px; min-width:180px
+    }
+    button{
+      background:#1d2735; color:#e8eef7; border:1px solid #2a3442;
+      padding:10px 14px; border-radius:10px; cursor:pointer
+    }
+    button:hover{filter:brightness(1.1)}
+    .meta{color:var(--muted); font-size:12px}
+    table{width:100%; border-collapse:separate; border-spacing:0 8px}
+    th,td{padding:10px 12px; text-align:left}
+    th{color:#aebad0; font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:.04em}
+    tr{background:#12161d; border:1px solid #202938}
+    tr td:first-child, tr th:first-child{border-top-left-radius:12px; border-bottom-left-radius:12px}
+    tr td:last-child, tr th:last-child{border-top-right-radius:12px; border-bottom-right-radius:12px}
+    .pill{display:inline-block; padding:4px 8px; border-radius:999px; font-size:12px; font-weight:600}
+    .pill.ok{background:rgba(21,194,123,.14); color:#4ce39f; border:1px solid rgba(21,194,123,.3)}
+    .pill.warn{background:rgba(240,196,25,.12); color:#ffd86b; border:1px solid rgba(240,196,25,.28)}
+    .pill.no{background:rgba(243,91,91,.12); color:#ff8e8e; border:1px solid rgba(243,91,91,.28)}
+    .mini{font-size:12px; color:#c6d2e7}
+    .history{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; color:#c6d2e7; font-size:12px}
+    .grid{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+    @media (max-width:720px){ .grid{grid-template-columns:1fr} }
   </style>
 </head>
 <body>
-  <h1>Panel de Baloncesto (Gratis) — Estrategia con Señales</h1>
+  <header><h1>Panel Basket — Modo sin cuotas ni reloj</h1></header>
 
-  <div class="row">
-    <button id="btn" onclick="actualizar()">Actualizar ahora</button>
-    <span class="muted">Claves y banca:</span>
-    <input id="bank" type="number" min="0" step="1" placeholder="Bankroll (€) p. ej. 200" />
-    <button onclick="guardarClaves()">Guardar claves</button>
-  </div>
+  <div class="wrap">
+    <div class="card">
+      <div class="row">
+        <div>
+          <div class="meta">Introduce el marcador actual (formato <b>A-B</b>) y pulsa “Añadir tick”. Ej: <i>72-58</i></div>
+          <div class="row" style="margin-top:8px">
+            <input id="scoreInput" type="text" placeholder="Ej: 12-9" />
+            <button id="addBtn">Añadir tick</button>
+            <button id="resetBtn" title="Vaciar historial">Reset</button>
+          </div>
+        </div>
+        <div class="meta">Calcula Señal/Confianza solo con tu historial (no usa cuotas ni reloj).</div>
+      </div>
 
-  <div class="row" style="margin-top:8px">
-    <label>SportDevs:</label>
-    <input id="sdKey" type="password" placeholder="Authorization: Bearer ..." />
-    <label>The Odds API:</label>
-    <input id="oddsKey" type="password" placeholder="API Key ..." />
-  </div>
-
-  <table id="tabla">
-    <thead>
-      <tr>
-        <th>Competición</th>
-        <th>Marcador</th>
-        <th>Ritmo</th>
-        <th>Confianza</th>
-        <th>Cuota ML</th>
-        <th>Entrada</th>
-        <th class="right">Stake</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr><td colspan="7">Pulsa “Actualizar ahora”.</td></tr>
-    </tbody>
-  </table>
-
-  <p class="muted">
-    Estrategia: Q4 con ventaja ≥10 (o ≥12 si el ritmo es muy alto). Se estima una <em>confianza</em> (prob. de que aguante el líder) con factores de ventaja, tiempo y ritmo.
-    Si <code>confianza</code> &gt; <code>prob. implícita</code> de la cuota por ≥3 puntos, se marca <b>ENTRA</b> y se sugiere stake con <b>Kelly 25%</b>.
-  </p>
-
-  <!-- Visor de datos brutos y rutas usadas (diagnóstico) -->
-  <details style="margin-top:16px">
-    <summary>Ver datos brutos (para diagnóstico)</summary>
-    <pre id="raw" style="white-space:pre-wrap;background:#f6f8fa;padding:12px;border-radius:8px;max-height:300px;overflow:auto"></pre>
-  </details>
-
-  <script src="./script.js"></script>
-</body>
-</html>
+      <div class="grid" style="margin-top:12px">
+        <div class="card">
+          <div class="meta">Historial (últi
 
