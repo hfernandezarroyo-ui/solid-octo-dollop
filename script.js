@@ -1,10 +1,13 @@
 /*******************************
  * script.js (con visor y debug)
+ * Panel Basket – MVP gratuito
  *******************************/
-let SPORTDEVS_API_KEY = "3b9_ggLLo0-VoHA36GObPA";
-let ODDS_API_KEY      = "6ab0058770900f248c67b20aeefbbbaa";
 
-// Cargar claves guardadas
+/* CLAVES por defecto (puedes cambiarlas aquí o usando los inputs + "Guardar claves") */
+let SPORTDEVS_API_KEY = "3b9_ggLLo0-VoHA36GObPA";               // Authorization: Bearer <ESTO>
+let ODDS_API_KEY      = "6ab0058770900f248c67b20aeefbbbaa";     // The Odds API
+
+/* Cargar/guardar claves en el navegador (no se suben a GitHub) */
 (function initKeys(){
   try{
     const a = localStorage.getItem("sdKey");
@@ -56,7 +59,7 @@ function parseClock(v){
   return 0;
 }
 
-/* ===== extractores con ruta detectada (para debug) ===== */
+/* ===== extractores con ruta detectada (para debug visual) ===== */
 function findHome(g){
   const tries = [
     {rx: /(home|local|host)(_team)?(\.name)?$/i, pick: v=> isStr(v)?v: isStr(v?.name)?v.name:null},
@@ -96,37 +99,65 @@ function findLeague(g){
   if (f2) return {name: f2.value.name, path: f2.path+".name"};
   return {name:"Basket", path:"(no encontrado)"};
 }
+
+/* === MODIFICADO: detectar cuarto desde "times" si no hay period/quarter === */
 function findQuarter(g){
-  const f = deepFind(g,(v,p)=> isNum(v) && /(period|quarter|live_period|current_period|q)\b/i.test(p));
-  return {value: f? f.value:4, path: f? f.path:"(no encontrado)"};
+  // 1) campos directos
+  let f = deepFind(g,(v,p)=> isNum(v) && /(period|quarter|live_period|current_period|q)\b/i.test(p));
+  if (f) return {value: f.value, path: f.path};
+
+  // 2) NUEVO: array "times" con period_number o period
+  const t = deepFind(g,(v,p)=> Array.isArray(v) && /(^|\.)(times)$/i.test(p));
+  if (t && Array.isArray(t.value) && t.value.length){
+    const last = t.value[t.value.length-1];
+    if (isNum(last?.period_number)) return {value: last.period_number, path: t.path + "[*].period_number"};
+    if (isNum(last?.period))       return {value: last.period,       path: t.path + "[*].period"};
+  }
+  return {value: 4, path:"(no encontrado)"};
 }
+
+/* === MODIFICADO: detectar reloj desde "times[].time" si no hay clock/timer === */
 function findSecondsLeft(g){
-  const f = deepFind(g,(v,p)=>{
+  // 1) campos comunes
+  let f = deepFind(g,(v,p)=>{
     if (isNum(v) && /(clock|time.*left|remaining.*time|time_remaining|timer)/i.test(p)) return true;
     if (isStr(v) && /(clock|time|remaining|left)/i.test(p)) return true;
     if (v && typeof v==="object" && /(clock|time|remaining|left)/i.test(p)) return true;
     return false;
   });
-  return {value: parseClock(f?f.value:null), path: f? f.path:"(no encontrado)"};
+  if (f) return {value: parseClock(f.value), path: f.path};
+
+  // 2) NUEVO: array "times" con "time"
+  const t = deepFind(g,(v,p)=> Array.isArray(v) && /(^|\.)(times)$/i.test(p));
+  if (t && Array.isArray(t.value) && t.value.length){
+    const last = t.value[t.value.length-1];
+    if (last?.time != null) return {value: parseClock(last.time), path: t.path + "[*].time"};
+  }
+  return {value: 0, path:"(no encontrado)"};
 }
 
-/* ===== decisión ===== */
+/* ===== Reglas de decisión (Ultra Seguro básico) ===== */
 function decide({homeScore, awayScore, quarter, secLeftQ}){
-  const minPerQ = 10;
+  const minPerQ = 10; // FIBA
   const lead = Math.abs(homeScore - awayScore);
   const secsPlayedThisQ = (minPerQ*60) - (secLeftQ||0);
   const minsPlayedTotal = ((quarter-1)*minPerQ) + (secsPlayedThisQ/60);
   const pacePerQ = ((homeScore+awayScore)/Math.max(minsPlayedTotal,1))*minPerQ;
   const fast = pacePerQ >= 50;
   const minLead = fast ? 12 : 10;
-  if (quarter !== 4) return {state:"ESPERA", html:`🟡 ESPERA<br><small>Aún no es Q4</small>`};
-  if (lead < minLead) return {state:"ESPERA", html:`🟡 ESPERA<br><small>Ventaja ${lead} &lt; ${minLead}</small>`};
+
+  if (quarter !== 4){
+    return {state:"ESPERA", html:`🟡 ESPERA<br><small>Aún no es Q4</small>`};
+  }
+  if (lead < minLead){
+    return {state:"ESPERA", html:`🟡 ESPERA<br><small>Ventaja ${lead} &lt; ${minLead}</small>`};
+  }
   let p = 0.85 + (lead - minLead)*0.01 + (fast ? -0.02 : +0.02);
   p = Math.max(0.55, Math.min(0.97, p));
   return {state:"ENTRA", html:`✅ ENTRA (${Math.round(p*100)}%)<br><small>ML líder o -3.5/-4.5</small>`};
 }
 
-/* ===== fetch + pintado ===== */
+/* ===== Fetch + pintado ===== */
 async function actualizar(){
   const btn = document.getElementById("btn");
   const tbody = document.querySelector("#tabla tbody");
@@ -136,13 +167,14 @@ async function actualizar(){
   if (raw) raw.textContent = "";
 
   try{
+    // 1) EN VIVO (SportDevs) — dominio correcto + Bearer
     const liveRes = await fetch("https://basketball.sportdevs.com/matches?status_type=eq.live", {
       headers: { Authorization: "Bearer " + SPORTDEVS_API_KEY }
     });
     if (!liveRes.ok) throw new Error("SportDevs " + liveRes.status);
     const live = await liveRes.json();
     const partidos = Array.isArray(live)? live : (live?.data || []);
-    if (raw) raw.textContent = JSON.stringify(partidos.slice(0,2), null, 2); // mostramos 2 partidos como muestra
+    if (raw) raw.textContent = JSON.stringify(partidos.slice(0,2), null, 2); // muestra 2 partidos
 
     if (!partidos.length){
       tbody.innerHTML = `<tr><td colspan="6">Ahora mismo SportDevs no tiene partidos live.</td></tr>`;
@@ -157,7 +189,12 @@ async function actualizar(){
         const qu = findQuarter(g);
         const cl = findSecondsLeft(g);
 
-        const s = decide({homeScore:Number(hs.value||0), awayScore:Number(as.value||0), quarter:Number(qu.value||4), secLeftQ:Number(cl.value||0)});
+        const s = decide({
+          homeScore:Number(hs.value||0),
+          awayScore:Number(as.value||0),
+          quarter:Number(qu.value||4),
+          secLeftQ:Number(cl.value||0)
+        });
 
         // Fila principal
         const tr = document.createElement("tr");
@@ -169,7 +206,7 @@ async function actualizar(){
         `;
         tbody.appendChild(tr);
 
-        // Fila de debug (qué rutas se usaron)
+        // Fila Debug (rutas usadas)
         const trDbg = document.createElement("tr");
         trDbg.innerHTML = `
           <td colspan="6" class="muted">
@@ -182,13 +219,16 @@ async function actualizar(){
         tbody.appendChild(trDbg);
       }
     }
+
   }catch(e){
     tbody.innerHTML = `<tr><td colspan="6">Error: ${e.message}</td></tr>`;
+    console.error(e);
   }finally{
     btn.disabled = false; btn.textContent = "Actualizar ahora";
   }
 }
 
+/* Deja los inputs rellenados al cargar */
 document.addEventListener("DOMContentLoaded", ()=>{
   const a = document.getElementById("sdKey"); if (a) a.value = SPORTDEVS_API_KEY;
   const b = document.getElementById("oddsKey"); if (b) b.value = ODDS_API_KEY;
