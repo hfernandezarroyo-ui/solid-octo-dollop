@@ -1,9 +1,61 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="es">
 <head>
-  <title>Panel de apuestas</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Panel Basket (Gratis)</title>
+  <style>
+    body{font-family:system-ui,Arial,sans-serif;margin:16px}
+    h1{margin:0 0 8px}
+    .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    input[type="password"],input[type="text"]{padding:8px;border:1px solid #ddd;border-radius:8px;min-width:280px}
+    button{padding:8px 14px;border:0;border-radius:8px;background:#111;color:#fff;cursor:pointer}
+    button:disabled{opacity:.5;cursor:not-allowed}
+    table{width:100%;border-collapse:collapse;margin-top:12px}
+    th,td{border-bottom:1px solid #eee;padding:8px;text-align:left;vertical-align:top}
+    .chip{display:inline-block;padding:6px 8px;border-radius:8px}
+    .ok{background:#e6ffed}
+    .wait{background:#fff7e6}
+    .no{background:#ffe6e6}
+    small{color:#666}
+    .muted{color:#777;font-size:12px}
+  </style>
 </head>
 <body>
-  <h1>Hola, ya funciona GitHub Pages</h1>
+  <h1>Panel de Baloncesto (Gratis)</h1>
+  <div class="row">
+    <button id="btn" onclick="actualizar()">Actualizar ahora</button>
+    <span class="muted">Usa tus claves abajo si no cargaron aún.</span>
+  </div>
+
+  <div class="row" style="margin-top:8px">
+    <label>SportDevs:</label>
+    <input id="sdKey" type="password" placeholder="Authorization: Bearer ..." />
+    <label>The Odds API:</label>
+    <input id="oddsKey" type="password" placeholder="API Key ..." />
+    <button onclick="guardarClaves()">Guardar claves</button>
+  </div>
+
+  <table id="tabla">
+    <thead>
+      <tr>
+        <th>Competición</th>
+        <th>Marcador</th>
+        <th>Hándicap</th>
+        <th>Total</th>
+        <th>Ganador</th>
+        <th>Señal</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td colspan="6">Pulsa “Actualizar ahora”.</td></tr>
+    </tbody>
+  </table>
+
+  <p class="muted">
+    Nota: las cuotas pueden mostrarse con 🔒 cuando la fuente gratuita no las tiene. La señal usa tu método de alta seguridad.
+  </p>
+
+  <script src="./script.js"></script>
 </body>
 </html>
