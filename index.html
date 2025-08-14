@@ -5,111 +5,82 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Basket — Simple (sin cuotas ni reloj)</title>
   <style>
-    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif;background:#f6f8fb;margin:0;color:#111}
+    :root { --bg:#0b1020; --card:#141a2e; --muted:#93a2ff; --text:#e9eeff; }
+    html,body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,-apple-system,system-ui,Segoe UI,Roboto,Ubuntu,"Helvetica Neue","Noto Sans",Arial,"Apple Color Emoji","Segoe UI Emoji";font-size:16px}
     .wrap{max-width:980px;margin:24px auto;padding:0 16px}
-    h1{font-size:22px;margin:0 0 16px}
-    .card{background:#fff;border:1px solid #e6e9ef;border-radius:12px;padding:16px;margin:12px 0}
+    h1{font-size:22px;margin:0 0 12px}
+    .card{background:var(--card);border-radius:12px;padding:16px;margin:12px 0;border:1px solid #24315a}
     .row{display:flex;gap:12px;flex-wrap:wrap}
-    .row>*{flex:1 1 180px}
-    input,button{font:inherit;border:1px solid #d7dce5;border-radius:10px;padding:10px 12px}
-    input{background:#fff;width:100%}
-    button{background:#2f6feb;color:#fff;border:0;cursor:pointer}
-    button:disabled{opacity:.5;cursor:not-allowed}
-    .hint{font-size:12px;color:#667085;margin-top:6px}
-    .badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#eef2ff;color:#3b5bdb;font-size:12px;margin-left:8px}
-    table{width:100%;border-collapse:collapse;margin-top:10px;font-size:14px}
-    th,td{padding:10px;border-bottom:1px solid #eef1f6;text-align:left;white-space:nowrap}
-    th{font-weight:600;color:#475569;background:#fafbff}
-    .muted{color:#7b8794}
-    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
-    .ok{color:#0a7c3b}
-    .warn{color:#b45309}
-    .err{color:#b91c1c}
-    .pill{padding:2px 8px;border-radius:999px;background:#f1f5f9;font-size:12px}
-    .footer{font-size:12px;color:#6b7280;margin-top:6px}
-    .code{padding:8px;border-radius:8px;background:#0b1220;color:#d5e2ff;overflow:auto}
+    .row>*{flex:1 1 220px}
+    input,button{height:44px;border-radius:10px;border:1px solid #2a3768;background:#0f1530;color:var(--text);padding:0 14px;font-size:15px;outline:none}
+    input::placeholder{color:#6e7fc7}
+    button{background:#2f5cff;border-color:#2f5cff;font-weight:600;cursor:pointer}
+    button:disabled{opacity:.6;cursor:not-allowed}
+    .muted{color:var(--muted)}
+    #status{display:inline-block;padding:6px 10px;border-radius:999px;background:#eef2ff;color:#3b5bdb;font-size:12px;margin-left:8px}
+    #log{white-space:pre-wrap;background:#0e1430;border:1px dashed #2a3768;border-radius:10px;padding:12px;margin-top:8px;display:none}
+    table{width:100%;border-collapse:collapse;margin-top:10px}
+    th,td{border-bottom:1px solid #23305a;padding:10px 8px;text-align:left}
+    th{font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:#9db0ff}
+    .pill{display:inline-block;padding:4px 8px;border-radius:999px;background:#1a2348}
   </style>
 </head>
 <body>
   <div class="wrap">
-    <h1>Basket — Simple (sin cuotas ni reloj)
-      <span class="badge" id="status">ESPERA</span>
-    </h1>
+    <h1>Basket — Simple (sin cuotas ni reloj) <span id="status" class="pill">SIN EQUIPOS</span></h1>
 
-    <!-- AUTO (DEV Sports) -->
     <div class="card">
-      <h3 style="margin-top:0">Auto (API devs sports)</h3>
-      <div class="row" style="margin-bottom:8px">
+      <div class="muted" style="margin-bottom:8px;">Auto (API devs sports)</div>
+      <div class="row">
         <input id="baseUrl" placeholder="https://basketball.sportdevs.com" />
-        <input id="apiKey" placeholder="API key (Bearer token)" />
+        <input id="apiKey" placeholder="API key (Bearer)" />
         <button id="btnPing">Probar API</button>
       </div>
-      <div class="row">
-        <input id="idA" placeholder="ID Equipo A (p.ej. 408202)" />
-        <input id="idB" placeholder="ID Equipo B (p.ej. 408206)" />
+      <div class="row" style="margin-top:8px;">
+        <input id="idA" placeholder="ID Equipo A (p.ej. 8810 o 408202)" />
+        <input id="idB" placeholder="ID Equipo B (p.ej. 9070 o 408206)" />
         <button id="btnH2H">Buscar H2H</button>
       </div>
-      <div class="hint">Si tu API no permite CORS, llama desde un proxy/función serverless y devuelve el JSON.</div>
-      <div class="footer">Base URL sugerida: <span class="mono">https://basketball.sportdevs.com</span></div>
+      <div class="muted" style="margin-top:6px">Si tu API no permite CORS, llama desde un proxy/función serverless y devuelve el JSON. Base URL sugerida: <code>https://basketball.sportdevs.com</code></div>
     </div>
 
-    <!-- PANEL manual -->
     <div class="card">
-      <h3 style="margin-top:0">Panel</h3>
+      <div class="muted" style="margin-bottom:8px;">Panel</div>
       <div class="row">
-        <input id="teamA" placeholder="Equipo A (nombre, ej: Sweden U16 o Sweden)" />
-        <input id="teamB" placeholder="Equipo B (nombre, ej: Iceland U16 o Iceland)" />
+        <input id="teamA" placeholder="Equipo A (ej. Sweden, Sweden U16, Suecia)" />
+        <input id="teamB" placeholder="Equipo B (ej. Finland, Finland U16, Finlandia)" />
         <button id="btnBuscarNombres">Resolver por nombres</button>
       </div>
-      <div class="card" style="border-style:dashed">
-        <div><b>Resumen rápido</b> — <span id="quick">T: — · Lead: — · Fase: — · Ritmo: — · Momentum: —</span></div>
+      <div class="card" style="background:#0f1530;border:1px solid #23305a;margin-top:12px">
+        <b>Resumen rápido</b> — <span id="quick" class="muted">T: — · Lead: — · Fase: — · Ritmo: — · Momentum: —</span>
       </div>
+      <div id="log"></div>
     </div>
 
-    <!-- RESULTADO -->
     <div class="card">
-      <h3 style="margin:0 0 8px">Partido</h3>
-      <div class="row">
-        <div><b id="matchLabel">ESPERA</b></div>
-        <div><span id="conf" class="pill">0%</span></div>
+      <div class="row" style="align-items:center;gap:8px">
+        <b style="font-size:18px">Partido</b>
+        <span class="pill" id="conf">ESPERA</span>
+        <span class="pill" id="matchLabel" style="margin-left:6px">—</span>
       </div>
 
       <table id="tbl" style="display:none">
         <thead>
           <tr>
-            <th>Fecha</th>
-            <th>Local</th>
-            <th>Visitante</th>
-            <th>Total</th>
-            <th>Parciales</th>
-            <th>Estado</th>
-            <th>Liga</th>
+            <th>Fecha</th><th>Local</th><th>Visitante</th><th>Total</th><th>Parciales</th><th>Estado</th><th>Torneo</th>
           </tr>
         </thead>
         <tbody id="rows"></tbody>
       </table>
 
-      <div id="log" class="code" style="display:none"></div>
-    </div>
-
-    <div class="footer">
-      Consejo: si cargas por API, el último enfrentamiento se vuelca en la tabla automáticamente.
+      <div class="muted" style="margin-top:10px">
+        Consejo: si cargas por API, el último enfrentamiento se vuelca en la tabla automáticamente.
+      </div>
     </div>
   </div>
-
-  <!-- (opcional) Archivo local para fijar BASE_URL / API_KEY -->
-  <!-- si no lo usas, no pasa nada -->
-  <script>
-    // valores por defecto (se pueden sobreescribir por inputs o por config.js)
-    window.__DEFAULTS__ = {
-      BASE_URL: "https://basketball.sportdevs.com",
-      API_KEY: "" // puedes dejar vacío y pegar tu token arriba en el input
-    };
-  </script>
-  <!-- Si decides crear config.js con tus claves, debe ir antes de script.js -->
-  <!-- <script src="config.js"></script> -->
 
   <script src="script.js"></script>
 </body>
 </html>
+
 
