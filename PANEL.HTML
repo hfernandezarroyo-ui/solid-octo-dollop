@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Panel Basket (Gratis)</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 20px; }
+  button { padding: 8px 14px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+  th, td { border-bottom: 1px solid #ddd; padding: 6px; text-align: left; vertical-align: top; }
+  .ok { background:#e6ffed; }
+  .wait { background:#fff7e6; }
+  .no { background:#ffe6e6; }
+  small { color:#666; }
+</style>
+</head>
+<body>
+
+<h1>Panel de Baloncesto (Gratis)</h1>
+<p>Pulsa “Actualizar ahora” para ver partidos en vivo y la señal SÍ/ESPERA/NO.</p>
+<button id="btn" onclick="actualizar()">Actualizar ahora</button>
+
+<table id="tabla">
+  <thead>
+    <tr>
+      <th>Competición</th>
+      <th>Marcador</th>
+      <th>Hándicap</th>
+      <th>Total</th>
+      <th>Ganador</th>
+      <th>Señal</th>
+    </tr>
+  </thead>
+  <tbody><tr><td colspan="6">Pulsa “Actualizar ahora”.</td></tr></tbody>
+</table>
+
+<script>
+// === TUS CLAVES (las que me diste) ===
+const SPORTDEVS_API_KEY = "3b9_ggLLo0-VoHA36GObPA";              // SportDevs (marcadores)
+const ODDS_API_KEY      = "6ab0058770900f248c67b20aeefbbbaa";    // The Odds API (cuotas)
+
+// === Reglas SÍ/ESPERA/NO (Ultra Seguro básico) ===
+function decidirSenal({homeScore, awayScore, quarter, secLeftQ}) {
+  const minPerQ = 10;             // FIBA
+  const lead = Math.abs(homeScore - awayScore);
+  const secsPlayedThisQ = (minPerQ*60) - (secLeftQ||0);
+  const minsPlayedTotal = ((quarter-1)*minPerQ) + (secsPlayedThisQ/60);
+  const pacePerQ = ((homeScore+awayScore)/Math.max(minsPlayedTotal,1))*minPerQ;
+  const fast = pacePerQ >= 50;
+  const minLead = fast ? 12 : 10;
+
+  if (quarter !== 4) {
+    return {state:"ESPERA", html:`🟡 ESPERA<br><small>Aún no es Q4</small>`};
+  }
+  if (lead < minLead) {
+    return {state:"ESPERA", html:`🟡 ESPERA<br><small>Ventaja ${lead} &lt; ${minLead}</small>`};
+  }
+  let p = 0.85 + (lead - minLead)*0.01 + (fast ? -0.02 : +0.02);
+  p = Math.min(0.97, Math.max(0.55, p));
+  return {state:"ENTRA", html:`✅ ENTRA (${Math.round(p*100)}%)<br><small>ML líder o -3.5/-4.5</small>`};
+}
+
+// === Actualizar tabla ===
+async function actualizar() {
+  const tbody = document.querySelector("#tabla tbody");
+  tbody.innerHTML = `<tr><td colspan="6">Cargando...</td></tr>`;
+
+  try {
+    // 1) Partidos EN VIVO (SportDevs) — dominio correcto + Bearer
+    const liveRes = await fetch("https://basketball.sportdevs.com/matches?status_type=eq.live", {
+      headers: { Authorization: "Bearer " + SPORTDEVS_API_KEY }
+    });
+    const live = await liveRes.json();
+    const partidos = Array.isArray(live) ? live : (live?.data || []);
+
+    // 2) Cuotas (opcional, puede devolver vacío)
+    let oddsAll = [];
+    try {
+      const sportsRes = await fetch(`https://api.the-odds-api.com/v4/sports?apiKey=${ODDS_API_KEY}`);
+      const sports = await sportsRes.json();
+      const basketKeys = (Array.isArray(sports) ? sports : []).filter(s => s.key?.startsWith("basketball_")).map(s => s.key);
+      for (const key of basketKeys) {
+        const oRes = await fetch(`https://api.the-odds-api.com/v4/sports/${key}/odds?apiKey=${ODDS_API_KEY}&regions=eu,us&markets=h2h,spreads,totals&oddsFormat=decimal`);
+        const arr = await oRes.json();
+        if (Array.isArray(arr)) oddsAll = oddsAll.concat(arr);
+      }
+    } catch(_) {}
+
+    // 3) Pintar
+    if (!partidos.length) {
+      tbody.innerHTML = `<tr><td colspan="6">Ahora mismo SportDevs no tiene partidos live.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = "";
+
+    for (const g of partidos) {
+      const league = g?.league?.name || g?.tournament?.name || "Basket";
+      const homeName = g?.home?.name || g?.home_team || "Local";
+      const awayName = g?.away?.name || g?.away_team || "Visitante";
+      const homeScore = Number(g?.home?.score ?? g?.home_score ?? 0);
+      const awayScore = Number(g?.away?.score ?? g?.away_score ?? 0);
+      const quarter = g?.period || g?.status?.period || 4;
+      const secLeftQ = g?.clock_seconds_left ?? 0;
+
+      const s = decidirSenal({homeScore, awayScore, quarter, secLeftQ});
+
+      // (Simple) si no hay odds, dejamos candados
+      const spread = "🔒";
+      const total  = "🔒";
+      const ml     = "🔒";
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${league}</td>
+        <td>${homeName} ${homeScore} - ${awayScore} ${awayName} <br><small>Q${quarter}</small></td>
+        <td>${spread}</td>
+        <td>${total}</td>
+        <td>${ml}</td>
+        <td class="${s.state==='ENTRA'?'ok':s.state==='ESPERA'?'wait':'no'}">${s.html}</td>
+      `;
+      tbody.appendChild(tr);
+    }
+
+  } catch (e) {
+    tbody.innerHTML = `<tr><td colspan="6">Error: ${e.message}</td></tr>`;
+  }
+}
+</script>
+
+</body>
+</html>
