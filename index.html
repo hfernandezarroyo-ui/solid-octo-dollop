@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Panel Basket (Gratis)</title>
+  <title>Panel Basket – Señales y Estrategia</title>
   <style>
     body{font-family:system-ui,Arial,sans-serif;margin:16px}
     h1{margin:0 0 8px}
     .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-    input[type="password"],input[type="text"]{padding:8px;border:1px solid #ddd;border-radius:8px;min-width:280px}
+    input[type="password"],input[type="text"],input[type="number"]{padding:8px;border:1px solid #ddd;border-radius:8px;min-width:220px}
     button{padding:8px 14px;border:0;border-radius:8px;background:#111;color:#fff;cursor:pointer}
     button:disabled{opacity:.5;cursor:not-allowed}
     table{width:100%;border-collapse:collapse;margin-top:12px}
@@ -20,14 +20,17 @@
     small{color:#666}
     .muted{color:#777;font-size:12px}
     code{background:#f6f8fa;padding:2px 4px;border-radius:4px}
+    .right{text-align:right}
   </style>
 </head>
 <body>
-  <h1>Panel de Baloncesto (Gratis)</h1>
+  <h1>Panel de Baloncesto (Gratis) — Estrategia con Señales</h1>
 
   <div class="row">
     <button id="btn" onclick="actualizar()">Actualizar ahora</button>
-    <span class="muted">Usa tus claves abajo si no cargaron aún.</span>
+    <span class="muted">Claves y banca:</span>
+    <input id="bank" type="number" min="0" step="1" placeholder="Bankroll (€) p. ej. 200" />
+    <button onclick="guardarClaves()">Guardar claves</button>
   </div>
 
   <div class="row" style="margin-top:8px">
@@ -35,7 +38,6 @@
     <input id="sdKey" type="password" placeholder="Authorization: Bearer ..." />
     <label>The Odds API:</label>
     <input id="oddsKey" type="password" placeholder="API Key ..." />
-    <button onclick="guardarClaves()">Guardar claves</button>
   </div>
 
   <table id="tabla">
@@ -43,22 +45,24 @@
       <tr>
         <th>Competición</th>
         <th>Marcador</th>
-        <th>Hándicap</th>
-        <th>Total</th>
-        <th>Ganador</th>
-        <th>Señal</th>
+        <th>Ritmo</th>
+        <th>Confianza</th>
+        <th>Cuota ML</th>
+        <th>Entrada</th>
+        <th class="right">Stake</th>
       </tr>
     </thead>
     <tbody>
-      <tr><td colspan="6">Pulsa “Actualizar ahora”.</td></tr>
+      <tr><td colspan="7">Pulsa “Actualizar ahora”.</td></tr>
     </tbody>
   </table>
 
   <p class="muted">
-    Nota: las cuotas pueden mostrarse con 🔒 cuando la fuente gratuita no las tiene. La señal usa tu método de alta seguridad.
+    Estrategia: Q4 con ventaja ≥10 (o ≥12 si el ritmo es muy alto). Se estima una <em>confianza</em> (prob. de que aguante el líder) con factores de ventaja, tiempo y ritmo.
+    Si <code>confianza</code> &gt; <code>prob. implícita</code> de la cuota por ≥3 puntos, se marca <b>ENTRA</b> y se sugiere stake con <b>Kelly 25%</b>.
   </p>
 
-  <!-- Visor de datos brutos para diagnóstico -->
+  <!-- Visor de datos brutos y rutas usadas (diagnóstico) -->
   <details style="margin-top:16px">
     <summary>Ver datos brutos (para diagnóstico)</summary>
     <pre id="raw" style="white-space:pre-wrap;background:#f6f8fa;padding:12px;border-radius:8px;max-height:300px;overflow:auto"></pre>
